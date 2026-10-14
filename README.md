@@ -4,6 +4,8 @@
 
 sweem is a trading terminal and yield platform on Monad mainnet (chain 143). Users trade Kuru order books, build and buy yield baskets, and automate DCA, take profit, stop loss and rebalancing. Every position lives in the user's own Privy wallet. sweem never takes custody: a delegated signer, restricted by a Privy policy allowlist, runs planned steps on the user's behalf, and every step is rechecked against a fixed list of deployed contracts before it is signed.
 
+<img width="3840" height="2160" alt="metadata" src="https://github.com/user-attachments/assets/6ecdc697-ef0c-4298-a0fe-7d7bbd09d175" />
+
 ## Architecture
 
 sweem splits work across services that each own one concern:
