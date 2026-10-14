@@ -530,3 +530,48 @@ func TestWithdrawMulti(t *testing.T) {
 		{"action":"stable.swap","from":"AUSD","to":"USDC","amount":"74263378","minOut":"74226246"},
 		{"action":"kuru.marketSell","market":"MON","size":"7470000000000000000000","minOut":"224100000"}]`)
 }
+
+// hold: bought with the rest of the sleeve, stays in the wallet (no venue step), sold on exit, moved on rebalance with no withdraw.
+func TestHold(t *testing.T) {
+	p, _ := planner()
+	ctx := context.Background()
+	s := Strategy{Asset: "MON", Sources: []Source{{"hold", "wallet", 5000, SourceParams{}}, {"lending", "neverland", 5000, SourceParams{}}}}
+	if err := p.Validate(s); err != nil {
+		t.Fatal(err)
+	}
+	if err := p.Validate(Strategy{Asset: "MON", Sources: []Source{{"hold", "aave", 10000, SourceParams{}}}}); code(err) != "unsupported_source" {
+		t.Errorf("hold venue: %v", err)
+	}
+	plan, err := p.Deploy(ctx, s, decimal.NewFromInt(1_000_000_000), false, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var actions []string
+	for _, st := range plan.Steps {
+		actions = append(actions, st.Action)
+	}
+	if got := strings.Join(actions, ","); got != "fee.transfer,kuru.marketBuy,wmon.wrap,lend.supply" {
+		t.Errorf("deploy steps: %s", got)
+	}
+	if plan.Legs[0].Kind != "hold" || plan.Legs[0].Asset != plan.Legs[1].Asset || plan.Legs[0].Asset == "0" {
+		t.Errorf("legs: %+v", plan.Legs)
+	}
+	h := plan.Legs[0].Asset
+	bals := []Balance{{Value: h}, {Value: plan.Legs[1].Asset}}
+	w, err := p.Withdraw(ctx, s, plan.Legs, bals, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	last := w.Steps[len(w.Steps)-1]
+	if w.Steps[0].Action != "lend.withdraw" || last.Action != "kuru.marketSell" || last.Size != d(h).Mul(decimal.NewFromInt(2)).String() {
+		t.Errorf("withdraw: %+v", w.Steps)
+	}
+	// all to lending: no withdraw step for hold, the freed tokens are supplied
+	r, err := p.Rebalance(ctx, s, plan.Legs, bals, []int{0, 10000}, false, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if r.Steps[0].Action != "wmon.wrap" || r.Legs[0].Asset != "0" {
+		t.Errorf("rebalance: %+v %+v", r.Steps, r.Legs)
+	}
+}

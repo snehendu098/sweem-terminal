@@ -79,6 +79,10 @@ func (s *Server) partAPY(asset string, srcs []planner.Source, r streams.RatesSna
 				apy = &v
 			}
 		}
+		if src.Kind == "hold" {
+			z := decimal.Zero // spot in the wallet earns nothing
+			apy = &z
+		}
 		if src.Kind == "basis" {
 			perpID := s.Plan.PerpID(asset)
 			for _, f := range r.Funding {

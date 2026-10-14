@@ -27,13 +27,14 @@ type Pick = { kind: SourceKind; venue: string; bps: number; leverage: string };
 const MAX_SOURCES = 10; // planner: ≤10 sources total (32-step plan cap)
 
 const defaultPicks = (a: string): Pick[] => {
-  const k = kindsFor(a)[0];
+  const k = kindsFor(a).find((x) => x !== "hold") ?? "hold"; // default to a yield source; hold is opt-in
   return k ? [{ kind: k, venue: defaultVenue(k, a), bps: 10000, leverage: "2" }] : [];
 };
 const toSources = (picks: Pick[]) =>
   picks.map((p) => ({ kind: p.kind, venue: p.venue, weightBps: p.bps, ...(p.kind === "basis" ? { params: { leverage: p.leverage } } : {}) }));
 
 const HINT: Record<SourceKind, string> = {
+  hold: "Buy and keep the token in your wallet. No venue, no yield, instant exit.",
   lending: "Supply to a money market / ERC-4626 vault. Instant exit.",
   staking: "Stake MON for shMON. Instant redeem, ~0.9% haircut.",
   lp: "Kuru ActiveVault MON/USDC. Estimated yield, 4-day lock.",
@@ -288,7 +289,7 @@ export function StrategyBuilder() {
                   ))}
                 </div>
               )}
-              {(["lending", "staking", "lp", "basis"] as SourceKind[]).map((kind) => {
+              {(["hold", "lending", "staking", "lp", "basis"] as SourceKind[]).map((kind) => {
                 const i = picks.findIndex((p) => p.kind === kind);
                 const p = picks[i];
                 const ok = kinds.includes(kind);

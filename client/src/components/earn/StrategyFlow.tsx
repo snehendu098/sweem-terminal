@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef } from "react";
 import { BaseEdge, Handle, Position, ReactFlow, ReactFlowProvider, getSmoothStepPath, useReactFlow, type Edge, type EdgeProps, type Node, type NodeProps } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { ArrowDownUp, Droplets, Landmark, Layers, type LucideIcon } from "lucide-react";
+import { ArrowDownUp, Droplets, Landmark, Layers, type LucideIcon, Wallet } from "lucide-react";
 import { fmtNum } from "@/lib/api";
 import type { SourceKind } from "@/lib/types";
 import { TokenIcon } from "@/components/TokenIcon";
@@ -15,7 +15,7 @@ import { KIND_LABEL, LP_ASSUMED_APR, PERP, protocolOf, venueName } from "./sourc
 // token: the sleeve this leg belongs to (multi-token baskets); weightBps is of the whole amount
 export type FlowLeg = { kind: SourceKind; venue: string; weightBps: number; apy: number | null; leverage: number; token?: string };
 
-const KIND_ICON: Record<SourceKind, LucideIcon> = { lending: Landmark, staking: Layers, lp: Droplets, basis: ArrowDownUp };
+const KIND_ICON: Record<SourceKind, LucideIcon> = { hold: Wallet, lending: Landmark, staking: Layers, lp: Droplets, basis: ArrowDownUp };
 
 type CardData = { [k: string]: unknown; title: string; sub?: string; positive?: boolean; symbol?: string; protocol?: string; kind?: SourceKind; ends?: "left" | "right" };
 type CardNode = Node<CardData, "card">;
@@ -68,6 +68,7 @@ function leaves(l: FlowLeg, asset: string, amt: number): CardData[] {
       { title: `Perpl ${PERP[l.token ?? asset]?.name ?? ""} short`, sub: `${L}× · ${apy} funding`, positive: l.apy !== null, protocol: "perpl" },
     ];
   }
+  if (l.kind === "hold") return [{ title: "Your wallet", sub: "spot · no yield" }];
   if (l.kind === "lp") return [{ title: "Kuru ActiveVault", sub: `~${pct(LP_ASSUMED_APR, 0)} est. · 4d lock`, positive: true, protocol: "kuru" }];
   return [{ title: venueName(l.venue), sub: `${apy} APY`, positive: l.apy !== null, protocol: protocolOf(l.venue) }];
 }
