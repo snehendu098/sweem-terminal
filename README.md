@@ -288,4 +288,6 @@ Caddy terminates TLS on `api.$DOMAIN` and routes `/` to the api, `/data` to mark
 
 ## License
 
-Apache License 2.0
+Source-available under the [PolyForm Strict License 1.0.0](LICENSE.md). Copyright (c) 2026 Snehendu Roy.
+
+You may read the code and run it for personal, noncommercial purposes. You may **not** distribute or copy it, change it or build new works from it, or use it commercially (including reselling or offering it as a service). For any other use, contact the author for a separate license.
