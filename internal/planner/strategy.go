@@ -244,6 +244,10 @@ func (p *Planner) validSource(asset string, src Source) error {
 				return bad("unknown vault for " + asset)
 			}
 		}
+	case "hold":
+		if src.Venue != "wallet" {
+			return bad("hold is venue wallet")
+		}
 	case "staking":
 		if src.Venue != "shmonad" || asset != "MON" {
 			return bad("staking is shmonad on MON only")
@@ -275,11 +279,13 @@ func lendAsset(asset string) string {
 	return asset
 }
 
-// supply puts amt atoms of the strategy asset into a lending/staking source (MON wrapped first for lending).
+// supply puts amt atoms of the strategy asset into a lending/staking source (MON wrapped first for lending). hold: stays in the wallet.
 func (p *Planner) supply(asset string, src Source, amt decimal.Decimal) []Step {
 	a, la := amt.String(), lendAsset(asset)
 	var st Step
 	switch {
+	case src.Kind == "hold":
+		return nil
 	case src.Kind == "staking":
 		return []Step{{Action: "shmonad.deposit", Amount: a}}
 	case src.Venue == "aave":
@@ -297,7 +303,11 @@ func (p *Planner) supply(asset string, src Source, amt decimal.Decimal) []Step {
 }
 
 // takeOut withdraws amt asset atoms from a lending/staking source (all = everything, by shares); returns the guaranteed asset out.
+// hold: already in the wallet, nothing to withdraw.
 func (p *Planner) takeOut(asset string, src Source, amt decimal.Decimal, b Balance, all bool) ([]Step, decimal.Decimal) {
+	if src.Kind == "hold" {
+		return nil, amt
+	}
 	shares := d(b.Shares)
 	if !all && d(b.Value).IsPositive() {
 		shares = shares.Mul(amt).Div(d(b.Value)).Floor()

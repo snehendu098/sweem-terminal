@@ -31,7 +31,7 @@ type RateInfo = { source: string; venue: string; asset: string; address: string;
 type FundingInfo = { perpId: number; name: string; rate: string; intervalSec: number; aprShort: string; aprShort7d: string; block: number; ts: number };
 export type Rates = { ts: number; rates: RateInfo[]; funding: FundingInfo[]; stale: boolean };
 
-export type SourceKind = "lending" | "staking" | "lp" | "basis";
+export type SourceKind = "hold" | "lending" | "staking" | "lp" | "basis";
 export type Source = { kind: SourceKind; venue: string; weightBps: number; params?: { leverage?: string } };
 // one token's part of a multi-token strategy; old rows have none (asset + sources = one sleeve)
 export type Sleeve = { asset: string; weightBps: number; sources: Source[] };

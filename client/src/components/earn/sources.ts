@@ -33,6 +33,7 @@ const VENUES: Record<string, { name: string; protocol: string }> = {
   shmonad: { name: "shMonad", protocol: "shmonad" },
   "kuru-activevault": { name: "Kuru ActiveVault", protocol: "kuru" },
   perpl: { name: "Kuru + Perpl", protocol: "perpl" },
+  wallet: { name: "Your wallet", protocol: "wallet" },
 };
 export const protocolOf = (venue: string) => VENUES[venue]?.protocol ?? venue;
 export const venueName = (venue: string) => VENUES[venue]?.name ?? venue;
@@ -45,10 +46,10 @@ export function lendingVenues(asset: string): { venue: string; name: string }[] 
   return [...out, ...VAULTS.filter((v) => v.asset === a)];
 }
 
-export const KIND_LABEL: Record<SourceKind, string> = { lending: "Lending", staking: "Staking", lp: "Liquidity", basis: "Funding basis" };
+export const KIND_LABEL: Record<SourceKind, string> = { hold: "Hold", lending: "Lending", staking: "Staking", lp: "Liquidity", basis: "Funding basis" };
 
 export function kindsFor(asset: string): SourceKind[] {
-  const k: SourceKind[] = [];
+  const k: SourceKind[] = ["hold"]; // plain spot in the wallet, any token
   if (lendingVenues(asset).length) k.push("lending");
   if (asset === "MON") k.push("staking", "lp");
   if (PERP[asset]) k.push("basis");
@@ -56,13 +57,16 @@ export function kindsFor(asset: string): SourceKind[] {
 }
 
 export const defaultVenue = (kind: SourceKind, asset: string) =>
-  kind === "lending" ? (lendingVenues(asset)[0]?.venue ?? "") : kind === "staking" ? "shmonad" : kind === "lp" ? "kuru-activevault" : "perpl";
+  kind === "hold"
+    ? "wallet"
+    : kind === "lending" ? (lendingVenues(asset)[0]?.venue ?? "") : kind === "staking" ? "shmonad" : kind === "lp" ? "kuru-activevault" : "perpl";
 
 export const leverageOf = (s: Source) => Number(s.params?.leverage ?? 2);
 
 // live APY per source; null = no rate. basis = trailing-7d short APR × L/(L+1) (spot share earns funding)
 export function sourceApy(s: Source, asset: string, rates: Rates | null | undefined): number | null {
   if (!rates) return null;
+  if (s.kind === "hold") return 0;
   if (s.kind === "lp") return LP_ASSUMED_APR;
   if (s.kind === "basis") {
     const f = rates.funding.find((x) => x.perpId === PERP[asset]?.id);

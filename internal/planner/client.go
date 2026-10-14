@@ -189,6 +189,10 @@ func balancesPart(ctx context.Context, c Chain, dep *config.Deployments143, wall
 			if px := d(legs[i].EntryPx); px.IsPositive() {
 				value = value.Add(d(legs[i].Collateral).Shift(-6).Div(px).Shift(int32(dep.Tokens[s.Asset].Decimals)).Floor())
 			}
+		case "hold":
+			// ponytail: the recorded amount, not the wallet balance (tokens are fungible with the user's own); a manual sell
+			// makes the exit's market sell fail, clamp to balanceOf here if that bites
+			value = d(legs[i].Asset)
 		case "staking":
 			if shares, err = call(ctx, c, dep.Staking.Shmonad, selBalanceOf, w); err == nil {
 				value, err = call(ctx, c, dep.Staking.Shmonad, selConvertToAssets, shares.BigInt().Bytes())
@@ -212,7 +216,7 @@ func balancesPart(ctx context.Context, c Chain, dep *config.Deployments143, wall
 		if err != nil {
 			return nil, fmt.Errorf("%s:%s: %w", src.Kind, src.Venue, err)
 		}
-		if src.Kind != "lp" && src.Kind != "basis" {
+		if src.Kind != "lp" && src.Kind != "basis" && src.Kind != "hold" {
 			// wallet-wide venue balance: this position's share by principal
 			mine, all := d(legs[i].Asset), d(legs[i].Asset)
 			for _, p := range peers {
